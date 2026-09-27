@@ -5,12 +5,8 @@
 services:
   - type: web
     name: engager-bot
-    runtime: python
+    runtime: docker       # needs libopus0 for voice — see Dockerfile
     plan: free
-    # discord-native-voice needs --no-deps: it pins discord.py-self>=2.2.0
-    # while master reports 2.2.0a0 (pre-release) — one pip pass can't resolve it
-    buildCommand: pip install -r requirements.txt && pip install --no-deps discord-native-voice
-    startCommand: python run.py
     # Render injects PORT automatically — run.py binds a health endpoint to it.
     envVars:
       # secret envs — set these in the Render dashboard (never commit .env)

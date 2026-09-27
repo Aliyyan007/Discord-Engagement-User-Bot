@@ -19,6 +19,7 @@ from typing import Any, Optional
 
 from groq import AsyncGroq
 from groq import BadRequestError as GroqBadRequestError
+from groq import NotFoundError as GroqNotFoundError
 from groq import RateLimitError as GroqRateLimitError
 from loguru import logger
 
@@ -129,6 +130,10 @@ class GroqPool:
                 # 400s (bad tool args, malformed payload) — retrying the same
                 # request on another key will never succeed. Fail fast.
                 raise
+            except GroqNotFoundError:
+                # 404 model_not_found — rotating keys won't resurrect a
+                # model that doesn't exist on this tier. Fail fast.
+                raise
             except Exception as e:  # noqa: BLE001
                 # 5xx / transient — short backoff, stay on rotation.
                 logger.error(f"Groq call failed ({type(e).__name__}): {e}")
@@ -215,6 +220,8 @@ class GroqPool:
                 continue
             except GroqBadRequestError:
                 raise
+            except GroqNotFoundError:
+                raise
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Groq stream failed ({type(e).__name__}): {e}")
                 last_err = e
@@ -257,6 +264,8 @@ class GroqPool:
                 continue
             except GroqBadRequestError:
                 raise  # non-retryable — another key produces the same 400
+            except GroqNotFoundError:
+                raise  # 404 model_not_found — same on every key
             except Exception as e:  # noqa: BLE001
                 logger.error(f"Groq call failed ({type(e).__name__}): {e}")
                 last_err = e

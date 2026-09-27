@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     # --- Groq ---
     groq_model_text: str = Field("openai/gpt-oss-120b", alias="GROQ_MODEL_TEXT")
     groq_model_chat: str = Field("openai/gpt-oss-20b", alias="GROQ_MODEL_CHAT")
+    # ROUTER_MODEL: the cheap arbiter classifying ACTION vs CHAT. Scout
+    # isn't available on every Groq tier; 3.3-70b is the universal fallback.
+    router_model: str = Field(
+        "llama-3.3-70b-versatile", alias="ROUTER_MODEL")
     groq_model_vision: str = Field(
         "meta-llama/llama-4-scout-17b-16e-instruct", alias="GROQ_MODEL_VISION"
     )

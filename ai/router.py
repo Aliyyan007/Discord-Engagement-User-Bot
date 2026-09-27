@@ -145,11 +145,9 @@ async def classify_llm(text: str) -> Route:
     pool = get_pool()
     try:
         resp = await pool.chat(
-            # llama-4-scout: smallest current non-reasoning model — sub-
-            # second one-word verdicts. (llama-3.1-8b-instant was removed
-            # from Groq's model list; every call 404'd and burned ~40s of
-            # key-rotation retries per ambiguous utterance.)
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            # Router arbiter — small/cheap model, configurable via
+            # ROUTER_MODEL (defaults to 3.3-70b; scout isn't on all tiers).
+            model=settings.router_model,
             messages=[
                 {"role": "system", "content": _ARB_PROMPT},
                 {"role": "user", "content": text[:400]},

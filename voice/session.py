@@ -80,6 +80,29 @@ try:
     _NATIVE_VOICE = True
 except Exception:  # noqa: BLE001
     _NATIVE_VOICE = False
+    AsyncQueueSink = PCMDecodeSink = _ResilientSink = None
+
+    class AudioFrameSource(discord.AudioSource):
+        """Fallback PCM source for the stock voice client — same interface
+        native_voice's AudioFrameSource exposes. Keeps SPEAKING working on
+        hosts where native_voice can't import (e.g. missing libopus)."""
+
+        def __init__(self, frames: list[bytes]) -> None:
+            self._frames = frames
+            self._i = 0
+
+        def read(self) -> bytes:
+            if self._i >= len(self._frames):
+                return b""
+            frame = self._frames[self._i]
+            self._i += 1
+            return frame
+
+        def is_opus(self) -> bool:
+            return False
+
+        def cleanup(self) -> None:
+            self._frames = []
 
 # --- behaviour tuning --------------------------------------------------- #
 MERGE_WINDOW_S = 0.28        # collect utterances finishing within this window
