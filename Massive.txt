@@ -1,0 +1,69 @@
+Hey! I have just created a system that logs into the Discord and perform the actions we ask to perform with the Ai integration and it also have ability to chat with users but I wanna extend its chatting behaviours and experience.
+
+On the Start Up, the bot will preform a comprehensive analysis of all of the channels and it will get the channel details like Name, Description, settings and it will now understand the nature of the channels including latest 20 messages images, embeds, messages, gif, sticker or anything within latest 20 messages and it will understand the nature of the channels like which channels are for chatting, available for all users, which are bump channels, if the channel is a bot command channel or what channel and it will now create a quick info in the Databse so, the bot will be informed about channels before chatting or it will adjust the tone according to the channel nature but it will never be required to keep a human like tone cuz the humans usually don't care about the channel topic for sometimes based on the conditions and chatting behaviours or the current situation.
+Note: All these actions will be performed by the central Ai system and currently it efficiently controls most of the actions so, you dont need to do any heavy lifting
+Also when the bot first do a heavy lifting to make understanding of all of the channels than it will store this info in the D1 Database and it will never do this heavy lifting to understand the channel nature on any restart and it will only do this if someone creates a new channel
+
+After that our bot will work as an active engagement bot, to make server active, after the first working it will look for potential channels for chat reviving and texting like it founds the main chatting channel by looking at the time stamp of the messages so, the bot will first see the latest 10 messages and will decide of it can make related replies to that message, it can reply to possible text messages within 10 latest messages of all of the text channels legit for texting like appropriate channels for texting like chill zone, general, culture, tech, etc but it should avoid other text channels like introduction, bump channel etc... so, now after that it will wait if any user responds if yes than it will ask related questions, replies, and it will keep chat active but during this the bot will also chat with other users, give replies to them if the algorithm says its now legit to make a reply to that message, it will be able to understand who is talking to the bot or who is talking to other users so, it will never truncate or do incorrect text messages, infact it will work as an active engager bot for making servers active but its algorithm will be strong enough and effecient so, it will work almost in human like behaviour, the bot should avoid stepping into the text channels if its already active like if he notices channel going too active, frequent text messages so, it will avoid it and you can use algorithm that are efficient to control this scenario properly so, it will never cause the bot to terminate its current conversation in any channel if it becomes moderately active and it will efficiently closes the chat if the channel goes very active so, as  to save the groq quota tokens, after that if someone not responds to the bot within a finite amount of time like 10 minutes so, the bot will now use the chat revive ping which we can setup in the .env file and will wait for several minutes like more 10 minutes to see if someone responds to it if yes than it will keep chat active, if not than it will mention or ping random online users to start conversation with them but I see if the bot keeps doing this than it will send a burst of messages in any of that channel which will make the server members thinks that this bot is for engagement purpose so, the bot will delete some of its previous messages so, it will reduce the look of burst messages without any reply in that channel and it will continue making the server engaged but it will also makesure it all these actions do not create any walls of mesaages 
+
+The bot will adjust to a discord like vibe like understanding of the short worda language like hru, hry, wbu, wdym, brb, afk, etc and it will use the Discord like silly short language so, it will look like a real human.
+
+The bot will respond to all of the user messages if they ask anything and the other users do not need to ping or make a reply message to the bot and our bot will be able to see and catch their messages via the Discord self.py system so, the other users do not need to make a reply or ping the bot 
+
+It will also see the new mesaages of any user in any channel and it will be able to make reply to them algorithmically, the main purpose is to make the server active 
+
+Improve the mesaage catching infrastructure, our bot will be able to give active replies to the users who are talking in any channel, multi chat control systems, it will be able to ask for the users preferences like if someone asks to the bot hru than it will also ask about the user who asked so, as to make it fair and human like
+
+It will send appropriate gifs, stickers, emojis, and it will also react to the user messages as part of the central Ai chat system 
+
+It will avoid random texting or wasting its efforts on other channels like bump channel, private channels, 6h slowmode channels, introduction channels or other channels of this kind
+
+You should have to search for the best algorithms to add emotions to the Ai pipeline so, it should text according to the mood, like anger, happiness, sorrow, sadness, Romantic, horny etc.... you can search for the best algorithms the best methods to do this efficiently 
+
+The bot will also use the central Ai actions performing attributes to adjust its bio, thought status algorithmically like editing thought status according to the mood or behaviours of the server 
+The bot name will be Eudora, 22y old female living in london, a women with a french touch and you can hardcode an amazing bio graphy of the bot 
+
+It will be able to understand the nature, the behaviours of the humans like if they are in anger, rage, sorrow, happy, or any thing related etc...
+
+I see when we ask anything to the bot it sends text mesaage too fast which looks ai bot like so, you can adjust the typing speed according to a real human so, it will look human like, after that you should have to implement a robust system while chatting to anyone like when anyother user sends or ask anything about the bot than it will look for the latest messages of that user to understand the condition and it will now text according to it, reply according to it
+The bot will be efficient enough to make reply to those messages sent during the bot is typing
+
+Infact it will work as a completely human like bot who talks take actions like a real human
+
+The bot will also have a context or cache memory system that caches some data for effeciency or human like behaviors
+
+It will use the CloudFlares D1 database for storing some bot owner commands, some important data about users if required if any other user preference if the bot catches
+
+Our bot will be able to understand to the commands of the owner like if the owner says the bot to greet every single new member in the general chat channel with human like scheduling so, it will save this info in the Database and it will now performing that actions, like its the owner preference 
+Commands of this type will be done when they are sent in the command channel already implemented in engager bot system and only be acceptable when the owner ask to implement and we can set the owner id in the .env file
+The bot will also ask for a confirmation message as its an ongoing action
+
+It will be able to understand the appropriate requests of other users
+
+Note: The whole above things will be controlled by the central Ai system already implemented in the "Engager Bot" system that performs the user asked actions so, this Ai will also control all of the above actions algorithmically
+
+
+Important Note: The above described features to make server active will be controlled completely algorithmically and you should have to search and make the most efficient algorithms for it 
+All of the above info is just a raw information and is not the absolute perfect ready to implement system so, you can get the basic idea from it to make more efficient chatting system, the algorithms
+All of the above info will be integrated wisely and it will never break the previous central ai action performing efficiency 
+
+You can even make it more powerful and efficient 
+
+
+You should have to first invoke the 4 sub agents to understand the Engager bot system like its infrastructure to plan a better massive edit 
+
+After it you will invoke 4 sub agents for comprehensive web research for our system so, as to achieve the best top Ai bot chatting experience
+
+Other sub agents for the safe editing and making robust algorithms to handle the above robust chatting system
+
+Very imp note: Also invoke subagents for independent practical testing of the system to see if everything works properly, this independent testing will test the bot from all aspects and also makesure that these edits do not break the previous ai's action performing capabilities.
+
+In the above prompt you will notice that i ask to integrate everything to the central ai system, its my opinion and if its not a good decision and you have another robust safe plan than tell me, stick with that
+
+Do a comprehensive analysis of the above prompt to understand its core nature 
+
+
+Use your full potential to achieve this goal effeciently
+You can get the initial credentials from the .env of the previous system but in engager bot, they are set too and if u wanna add another credentials like D1 than you can get it from the previous system
+
+First tell me how it will be Done and what will you do for it before starting the massive edit

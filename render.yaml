@@ -1,0 +1,39 @@
+# Render blueprint — free tier web service.
+# Deploy: push this repo to GitHub, then Render → New → Blueprint → pick repo.
+# Ping https://<service>.onrender.com from cron-job.org/UptimeRobot every
+# ~10 min to keep it awake (user handles that externally).
+services:
+  - type: web
+    name: engager-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    # Render injects PORT automatically — run.py binds a health endpoint to it.
+    envVars:
+      # secret envs — set these in the Render dashboard (never commit .env)
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: FISH_API_KEY
+        sync: false
+      - key: FISH_VOICE_ID
+        sync: false
+      # Groq keys — add as many GROQ_API_KEY, GROQ_API_KEY_2 ... as you have
+      - key: GROQ_API_KEY
+        sync: false
+      - key: KLIPY_API_KEY
+        sync: false
+      - key: OWNER_USER_ID
+        sync: false
+      - key: COMMAND_CHANNEL_ID
+        sync: false
+      # 512MB RAM — smart-turn (transformers+onnxruntime) may OOM; flip to
+      # true if the instance survives with it on.
+      - key: VOICE_SMART_TURN
+        value: "false"
+      - key: VOICE_ENABLED
+        value: "true"
+      - key: AUTO_BUMP
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.12.4"

@@ -1,0 +1,33 @@
+# ===== Engager Bot — dependencies =====
+# discord.py-self master is required for discord-native-voice (the PyPI
+# release 2.1.0 predates the voice-media APIs it imports). Pinned to the
+# verified-working master snapshot URL; swap for ==2.2.0 once released.
+discord.py-self @ https://github.com/dolfies/discord.py-self/archive/refs/heads/master.zip
+
+# Config / env
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+pyyaml>=6.0
+
+# AI (Groq — OpenAI-compatible, supports native tool/function calling)
+groq>=0.11.0
+
+# Utilities
+loguru>=0.7.0
+tenacity>=8.0.0
+aiohttp>=3.9.0
+rapidfuzz>=3.0.0          # fast fuzzy search for channels / members
+httpx>=0.27.0             # async HTTP for Klipy gif search & image fetch
+
+# Voice (real-time VC listen + speak pipeline)
+discord-native-voice>=0.1.1    # native RTP voice send/receive + DAVE E2EE for py-self
+opuslib-next-bundled>=0.1.1    # opus codec with bundled DLL (Windows-friendly)
+davey>=0.1.0                   # Discord DAVE E2EE voice protocol
+PyNaCl>=1.5.0                  # RTP encryption for the stock voice client
+av>=14.0.0                     # in-process mp3/wav decode + resample (no ffmpeg needed)
+numpy>=1.26.0                  # PCM math for VAD/resampling
+scipy>=1.11.0                  # polyphase resampling (optional — linear fallback)
+
+onnxruntime>=1.18            # smart-turn EOT model runtime
+transformers>=4.40            # WhisperFeatureExtractor for smart-turn (no torch needed)

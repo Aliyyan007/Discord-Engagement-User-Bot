@@ -1,0 +1,36 @@
+# secrets
+.env
+.env.local
+*.key
+
+# runtime data / logs
+logs/
+data/*.json
+data/bench/
+data/*.pcm
+*.log
+
+# models (big binaries; smart-turn auto-downloads at runtime)
+models/
+
+# vendored reference codebases (analysis sources — contain their own
+# secrets/env files; not ours to republish)
+reference_src/
+Reference Bots Code/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# IDE
+.devin/
+.vscode/
+.idea/
+*.code-workspace
+
+.env.zip
+*.zip
