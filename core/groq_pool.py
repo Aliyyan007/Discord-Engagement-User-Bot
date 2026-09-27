@@ -40,6 +40,7 @@ class GroqPool:
     _states: list[_KeyState] = field(default_factory=list)
     _idx: int = 0
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    _vision_dead: bool = False   # vision model 404'd once — skip future calls
 
     def __post_init__(self) -> None:
         if not self.keys:
@@ -280,6 +281,8 @@ class GroqPool:
         Returns a short textual description suitable for the agent's context.
         Falls back to a URL-based note if the vision model is unavailable.
         """
+        if self._vision_dead:
+            return f"[image sent: {image_url}]"
         messages = [
             {
                 "role": "user",
@@ -299,6 +302,14 @@ class GroqPool:
             if not resp.choices or not resp.choices[0].message:
                 return f"[image sent: {image_url} — vision returned empty]"
             return (resp.choices[0].message.content or "").strip() or f"[image sent: {image_url}]"
+        except GroqNotFoundError:
+            # the vision model isn't on this tier — remember it so we stop
+            # burning a call per image forever
+            self._vision_dead = True
+            logger.warning(
+                "Vision model unavailable on this Groq tier — disabling "
+                "image descriptions for this process.")
+            return f"[image sent: {image_url} — vision unavailable]"
         except Exception as e:  # noqa: BLE001
             logger.warning(f"Vision describe failed for {image_url}: {e}")
             # Fallback: return a note with the URL so the agent at least knows

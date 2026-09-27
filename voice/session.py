@@ -219,6 +219,34 @@ _SENTI_SPEED = [
     (re.compile(r"\b(sad|cry|upset|depressed|died|failed|broke up)\b", re.I), 1.35),
     (re.compile(r"\b(angry|pissed|mad|fucking|wtf|hate)\b", re.I), 1.25),
 ]
+# dismissive / "done with this" signals — they stack an annoyance score so
+# the model drops the topic instead of re-litigating it
+_DISMISSIVE_RX = re.compile(
+    r"\b(who (asked|cares)|nobody asked|shut ?up|stfu|"
+    r"stop (it|that|talking|asking|with|bringing)|drop (it|the topic|this)|"
+    r"move on|change the (subject|topic)|talk about something else|"
+    r"can we (not|drop|move)|whatever|don'?t care|i don'?t care|idc|idgaf|"
+    r"boring|never ?mind|nvm|forget (it|about it)|doesn'?t matter|"
+    r"leave it|(ok|okay|alright) (we|i) get it|enough (already|of|with)|"
+    r"chill (out|tf)|calm down|let it go|give it a rest|why are we still)\b",
+    re.I,
+)
+_POS_RX = re.compile(
+    r"\b(haha|lmao|lol+|love (it|that|u|you)|amazing|dope|lit|"
+    r"hype[ds]?|excited|pog|let'?s go|sick|fire|insane)\b|!{2,}",
+    re.I,
+)
+# ordered sentiment labels for the per-speaker trail — first match wins
+_SENTI_LABELS = [
+    (_DISMISSIVE_RX, "annoyed"),
+    (re.compile(
+        r"\b(angry|pissed|mad|fuck (you|this|that)|wtf|hate (this|it|u|you))\b",
+        re.I), "heated"),
+    (re.compile(
+        r"\b(sad|crying|cry|upset|depress|died|failed|broke up|"
+        r"miss (him|her|them|it)|rough)\b", re.I), "low"),
+    (_POS_RX, "warm"),
+]
 # pre-synth'd spoken acknowledgements — the voice analog of emoji reactions:
 # zero-LLM presence markers so the bot doesn't sound dead when not replying
 _ACK_POOLS = {
@@ -315,6 +343,13 @@ class VoiceSession:
         # per-speaker rolling audio tail (last ~8.5s of emitted utterances)
         # — feeds the smart-turn end-of-turn model
         self._turn_pcm: dict = {}                  # user_key -> deque[(ts, pcm)]
+        # emotional read: per-speaker annoyance score + sentiment trail,
+        # plus the rolling topic so replies follow their shifts instead of
+        # dragging them back
+        self._annoyance: dict = {}                 # key -> {"score","last"}
+        self._senti_trail: dict = {}               # key -> deque[str] last 3
+        self._topic_kw: list[str] = []             # current thread keywords
+        self._ignored_qs: dict = {}                # key -> count of ignored Qs
 
     # ================================================================== #
     #  lifecycle
@@ -619,8 +654,17 @@ class VoiceSession:
             self._last_room_speech_at = utt.ended_at
             self._last_speaker_key = utt.user_id
             self._remember_speech(utt.user_id, name, text, utt)
+            self._note_emotion(utt.user_id, name, text)
             if self._awaited_name and name.lower() == self._awaited_name:
                 self._awaited_name = ""     # they answered — ownership done
+                self._ignored_qs.pop(name.lower(), None)  # re-engaged
+
+        # we asked someone something and the window expired with no answer —
+        # they ignored it; keep score so we stop chasing
+        if self._awaited_name and time.monotonic() > self._awaited_until:
+            n = self._awaited_name
+            self._ignored_qs[n] = self._ignored_qs.get(n, 0) + 1
+            self._awaited_name = ""
 
         if not lines:
             return
@@ -693,6 +737,7 @@ class VoiceSession:
             self._last_room_speech_at = more.ended_at
             self._last_speaker_key = more.user_id
             self._remember_speech(more.user_id, name, text, more)
+            self._note_emotion(more.user_id, name, text)
             if more.user_id != lines[-1][2]:
                 break  # different speaker took over — their turn, not ours
 
@@ -759,6 +804,9 @@ class VoiceSession:
             if _BACKCHANNEL.match(bare_last)
             else random.uniform(RESPONSE_DELAY_MIN, RESPONSE_DELAY_MAX)
         ) * speed
+        # intent classification runs DURING the humanization pause —
+        # independent of the delay, so it hides behind it (~0.3s saved)
+        classify_task = asyncio.create_task(classify_llm(transcript))
         elapsed = time.monotonic() - end_ts
         if delay_target > elapsed:
             await asyncio.sleep(delay_target - elapsed)
@@ -766,7 +814,7 @@ class VoiceSession:
         # --- route: conversation vs action ------------------------------- #
         # Conversation calls carry NO tool schemas (~4x fewer tokens, no
         # hallucinated tool calls). Action utterances get a filtered subset.
-        route = await classify_llm(transcript)
+        route = await classify_task
         is_action = route.kind == ROUTE_ACTION and directed
 
         # --- think ------------------------------------------------------- #
@@ -941,6 +989,33 @@ class VoiceSession:
         )
         return "high" if score >= 6 else "medium" if score >= 3 else "low" if score >= 1 else "minimal"
 
+    def _note_emotion(self, key, name: str, text: str) -> None:
+        """Rolling emotional read per speaker: decaying annoyance score,
+        a 3-turn sentiment trail, and the live topic keywords — all feeding
+        the read-the-room nudges in _room_context."""
+        now = time.monotonic()
+        st = self._annoyance.setdefault(key, {"score": 0.0, "last": 0.0})
+        st["score"] = max(0.0, st["score"] - (now - st["last"]) / 120.0)
+        st["last"] = now
+        low = text.lower()
+        if _DISMISSIVE_RX.search(low):
+            # aimed at the bot (name ping / right after our turn) hits harder
+            # than room-directed venting
+            st["score"] += (
+                2.0 if self._is_directed(f"[{name}]: {text}") else 1.0)
+        elif len(low.split()) >= 5:
+            st["score"] = max(0.0, st["score"] - 0.75)
+        trail = self._senti_trail.setdefault(key, deque(maxlen=3))
+        for rx, label in _SENTI_LABELS:
+            if rx.search(low):
+                trail.append(label)
+                break
+        else:
+            trail.append("neutral")
+        words = [w for w in re.findall(r"[a-z]{4,}", low) if w not in _STOP]
+        if len(low.split()) >= 4 and words:
+            self._topic_kw = words[-3:]
+
     def _is_repeat(self, reply: str) -> bool:
         """Jaccard + shared-opener duplicate check vs our last spoken lines."""
         if not self._recent_spoken:
@@ -1010,6 +1085,12 @@ class VoiceSession:
         try:
             await asyncio.sleep(random.uniform(0.6, 1.6))
             if not self._running or self._speaking or self._busy:
+                return
+            # a follow-up beat at someone who's annoyed IS the annoying
+            # behaviour — check the emotional read before piling on
+            lk = self._last_speaker_key
+            an = self._annoyance.get(lk)
+            if an and an["score"] >= 2:
                 return
             just_said = (self._recent_spoken[-1][1]
                          if self._recent_spoken else "")
@@ -1391,9 +1472,11 @@ class VoiceSession:
                 # --- pick up unanswered room questions -------------------- #
                 if self._unanswered and humans and not self._busy and not self._speaking:
                     q = self._unanswered[0]
+                    asker = (self._annoyance.get(q[1]) or {}).get("score", 0)
                     if now - q[0] > 5:
                         self._unanswered.popleft()
-                        if random.random() < self.mood.proactive_chance:
+                        if (asker < 2
+                                and random.random() < self.mood.proactive_chance):
                             asyncio.create_task(self._proactive_reply(
                                 f"[{q[2].split(']:')[0].strip('[')} asked the "
                                 f"room a question and nobody answered — "
@@ -1411,9 +1494,17 @@ class VoiceSession:
                             and random.random() < self.mood.proactive_chance):
                         self._silence_broken_at = now
                         self._silence_stage = 1
+                        # dead-air revival: poke someone who ISN'T annoyed —
+                        # waking the irritated guy is how calls get hostile
+                        ok_humans = [
+                            m for m in humans
+                            if (self._annoyance.get(m.id) or {})
+                            .get("score", 0) < 2
+                        ] or humans
                         name = (self._display_name(self._last_speaker_key)
-                                if self._last_speaker_key else
-                                random.choice(humans).display_name)
+                                if self._last_speaker_key in
+                                {m.id for m in ok_humans} else
+                                random.choice(ok_humans).display_name)
                         asyncio.create_task(self._proactive_reply(
                             f"[Dead air. Direct-address {name} by name — "
                             f"check they're still there or pull them into a "
@@ -1654,6 +1745,35 @@ class VoiceSession:
                     "[they're barely engaging — don't over-invest, keep it "
                     "light]"
                 )
+
+        # --- read the room: annoyance, mood trail, live thread ----------- #
+        lk = self._last_speaker_key
+        if lk is not None:
+            lname = self._display_name(lk)
+            an = self._annoyance.get(lk)
+            if an and an["score"] >= 2:
+                parts.append(
+                    f"[{lname} sounds DONE with this — drop the topic "
+                    f"gracefully, no more questions about it; follow their "
+                    f"lead or give them space]"
+                )
+            trail = list(self._senti_trail.get(lk, ()))
+            neg = sum(1 for t in trail if t in ("annoyed", "heated", "low"))
+            if len(trail) >= 2 and neg >= 2:
+                parts.append(
+                    f"[{lname} has been {'/'.join(trail[-2:])} lately — "
+                    f"match that energy; softer, shorter, don't force upbeat]"
+                )
+            if self._ignored_qs.get(lname.lower(), 0) >= 2:
+                parts.append(
+                    f"[{lname} skipped your last few questions — quit "
+                    f"quizzing them for a while]"
+                )
+        if self._topic_kw:
+            parts.append(
+                "[current thread: " + ", ".join(self._topic_kw) +
+                " — roll with THEIR topic shifts; never drag them back]"
+            )
 
         # --- unanswered room questions ------------------------------------ #
         pending = [q for ts, k, q in self._unanswered if now - ts < 90]
