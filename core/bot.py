@@ -99,6 +99,11 @@ class EngagerBot(discord.Client):
         self._bot_names = list(set(self._bot_names))
         logger.info(f"Responding to names: {self._bot_names}")
 
+        # Persistent scheduler — revive timed tasks across restarts.
+        from core import scheduler as _sched
+        self.scheduler = _sched.init(self)
+        asyncio.create_task(self.scheduler.start())
+
         # Auto-join the configured server invite if provided & not already in.
         if settings.server_invite and not self.guilds:
             try:
@@ -353,6 +358,8 @@ class EngagerBot(discord.Client):
 
         # ---- Set the current channel on the context (for "here"/"this") --
         self.ctx.current_channel_id = channel_id
+        self.ctx.author_id = message.author.id
+        self.ctx.did_send = False
 
         # ---- Intent routing: chat vs action ------------------------------
         # Conversation messages get a tool-free single-shot call (cheap,
@@ -393,17 +400,28 @@ class EngagerBot(discord.Client):
         if reply and reply.strip().upper() not in ("NOACTION", "NULL"):
             memory.add_user(channel_id, speaker, clean_text)
             memory.add_assistant(channel_id, reply)
-            # Burst-split casual chat: a long reply lands as 2-3 rapid
-            # messages like a human typing, not one wall of text.
-            bursts = self._burst_split(reply) if mode == CHAT_MODE else [reply]
-            try:
-                for burst in bursts:
-                    for i in range(0, len(burst), 2000):
-                        await message.channel.send(burst[i:i + 2000])
-                    if len(bursts) > 1:
-                        await asyncio.sleep(random.uniform(0.4, 1.2))
-            except discord.HTTPException as e:
-                logger.warning(f"Failed to send reply: {e}")
+            # If a messaging tool already delivered this turn, don't send
+            # the reply too — that's the double-message bug (tool sends
+            # "X", then the channel.send sends it again).
+            if not self.ctx.did_send:
+                # Don't leave walls of our own unanswered messages — sweep
+                # stale ones first (ports the reference's self_cleanup).
+                try:
+                    from core import self_cleanup
+                    await self_cleanup.sweep_unanswered(self, message.channel)
+                except Exception:  # noqa: BLE001
+                    pass
+                # Burst-split casual chat: a long reply lands as 2-3 rapid
+                # messages like a human typing, not one wall of text.
+                bursts = self._burst_split(reply) if mode == CHAT_MODE else [reply]
+                try:
+                    for burst in bursts:
+                        for i in range(0, len(burst), 2000):
+                            await message.channel.send(burst[i:i + 2000])
+                        if len(bursts) > 1:
+                            await asyncio.sleep(random.uniform(0.4, 1.2))
+                except discord.HTTPException as e:
+                    logger.warning(f"Failed to send reply: {e}")
         elif mode == COMMAND_MODE and not reply:
             # In command mode, always confirm even if reply is empty.
             try:

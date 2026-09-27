@@ -36,6 +36,10 @@ _CUES: list[tuple[re.Pattern, set[str]]] = [
     (re.compile(r"\b(role|roles)\b", re.I), {"roles"}),
     (re.compile(r"\b(nickname|status|custom status|bio|about me|presence)\b", re.I), {"profile"}),
     (re.compile(r"\b(read|what did|last message|recent messages|check the|look at|fetch)\b", re.I), {"messages"}),
+    # timed actions: "after 5 sec", "every X seconds", "keep sending",
+    # "until i say stop", "stop it", "schedule a reminder"
+    (re.compile(r"\b(every|after|in \d|seconds?|minutes?|hours?|interval|repeat|keep (sending|posting|doing)|until i|schedule|scheduled|remind|timer|stop (it|that|sending|the)|cancel)\b", re.I), {"scheduling", "messaging"}),
+    (re.compile(r"\b(prefer|preference|remember that|from now on|always greet|always welcome|default channel)\b", re.I), {"prefs"}),
 ]
 
 # words that almost always mean the person wants the bot to DO something
@@ -43,7 +47,8 @@ _ACTION_VERBS = re.compile(
     r"\b(send|say|tell|ping|mention|tag|dm|delete|edit|react|join|leave|"
     r"move|mute|deafen|bump|post|write|read|check|search|find|list|show|"
     r"fetch|get|count|use|invoke|play|sticker|gif|change|set|update|"
-    r"make|spam|announce|welcome|greet|give|assign)\b",
+    r"make|spam|announce|welcome|greet|give|assign|schedule|remind|"
+    r"repeat|stop|cancel)\b",
     re.I,
 )
 
@@ -72,6 +77,9 @@ _FUZZY_CUES: dict[str, set] = {
     "bump": {"bump"}, "profile": {"members"}, "avatar": {"members"},
     "welcome": {"messaging"}, "greet": {"messaging"},
     "dm": {"messaging"}, "role": {"roles"},
+    "schedule": {"scheduling"}, "remind": {"scheduling"},
+    "repeat": {"scheduling"}, "stop": {"scheduling"},
+    "cancel": {"scheduling"}, "prefer": {"prefs"},
 }
 
 

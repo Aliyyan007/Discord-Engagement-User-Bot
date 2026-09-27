@@ -27,6 +27,8 @@ import tools.roles as roles
 import tools.profile as profile
 import tools.slash_commands as slash_commands
 import tools.bump_manager as bump_manager
+import tools.scheduler as scheduler_tools
+import tools.prefs as prefs
 
 ToolFn = Callable[..., Awaitable[Any]]
 
@@ -216,6 +218,24 @@ TOOL_SCHEMAS: list[dict] = [
     {"type": "function", "function": {
         "name": "get_bump_status", "description": "Get bump cooldown status for all tracked bump bots.",
         "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "schedule_message", "description": "Schedule a message: delay_s = send after N seconds; interval_s>0 = repeat every N seconds until told to stop.",
+        "parameters": {"type": "object", "properties": {"channel_query": {"type": "string"}, "content": {"type": "string"}, "delay_s": {"type": "number"}, "interval_s": {"type": "number"}, "label": {"type": "string"}}, "required": ["channel_query", "content"]}}},
+    {"type": "function", "function": {
+        "name": "list_scheduled", "description": "List active scheduled tasks.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "stop_scheduled", "description": "Stop scheduled task(s) by id/label/channel; empty = stop all. For 'stop it'/'stop sending'.",
+        "parameters": {"type": "object", "properties": {"query": {"type": "string"}}}}},
+    {"type": "function", "function": {
+        "name": "set_preference", "description": "Save an owner preference permanently, e.g. key=welcome_channel value=general.",
+        "parameters": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}}},
+    {"type": "function", "function": {
+        "name": "get_preferences", "description": "List stored owner preferences.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "delete_preference", "description": "Delete an owner preference by key.",
+        "parameters": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}}},
 ]
 
 
@@ -343,6 +363,28 @@ _CHAT_TOOL_SCHEMAS: list[dict] = [
     {"type": "function", "function": {
         "name": "get_bump_status", "description": "Check bump cooldowns for all bots.",
         "parameters": {"type": "object", "properties": {}}}},
+    # ---- Scheduled actions + owner preferences ----
+    {"type": "function", "function": {
+        "name": "schedule_message", "description": "Schedule a message: delay_s = first send after N seconds; interval_s>0 = repeat every N seconds forever until told to stop (owner only, survives restarts).",
+        "parameters": {"type": "object", "properties": {"channel_query": {"type": "string"}, "content": {"type": "string"}, "delay_s": {"type": "number"}, "interval_s": {"type": "number"}, "label": {"type": "string"}}, "required": ["channel_query", "content"]}}},
+    {"type": "function", "function": {
+        "name": "list_scheduled", "description": "List all active scheduled/timed tasks (owner only).",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "stop_scheduled", "description": "Stop scheduled task(s) by id/label/channel — empty query stops ALL. Use when owner says 'stop it'/'stop sending' (owner only).",
+        "parameters": {"type": "object", "properties": {"query": {"type": "string"}}}}},
+    {"type": "function", "function": {
+        "name": "set_preference", "description": "Save an owner preference that persists forever, e.g. key=welcome_channel value=general (owner only).",
+        "parameters": {"type": "object", "properties": {"key": {"type": "string"}, "value": {"type": "string"}}, "required": ["key", "value"]}}},
+    {"type": "function", "function": {
+        "name": "get_preferences", "description": "List stored owner preferences.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "delete_preference", "description": "Delete an owner preference by key.",
+        "parameters": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}}},
+    {"type": "function", "function": {
+        "name": "cleanup_my_messages", "description": "Delete the bot's own stale messages in a channel (older than 6h or beyond 15).",
+        "parameters": {"type": "object", "properties": {"channel_query": {"type": "string"}}, "required": ["channel_query"]}}},
 ]
 
 
@@ -408,11 +450,19 @@ _DISPATCH: dict[str, ToolFn] = {
     "delete_message": messaging.delete_message,
     "delete_last_message": messaging.delete_last_message,
     "edit_message": messaging.edit_message,
+    "cleanup_my_messages": messaging.cleanup_my_messages,
     # Bump management
     "find_bump_commands": bump_manager.find_bump_commands,
     "bump_with_bot": bump_manager.bump_with_bot,
     "bump_all": bump_manager.bump_all,
     "get_bump_status": bump_manager.get_bump_status,
+    # Scheduled actions + owner preferences
+    "schedule_message": scheduler_tools.schedule_message,
+    "list_scheduled": scheduler_tools.list_scheduled,
+    "stop_scheduled": scheduler_tools.stop_scheduled,
+    "set_preference": prefs.set_preference,
+    "get_preferences": prefs.get_preferences,
+    "delete_preference": prefs.delete_preference,
 }
 
 
@@ -431,7 +481,7 @@ _CATEGORIES: dict[str, str] = {
     "get_recent_messages": "messages", "get_message_by_link": "messages",
     "send_message": "messaging", "send_dm": "messaging",
     "delete_message": "messaging", "delete_last_message": "messaging",
-    "edit_message": "messaging",
+    "edit_message": "messaging", "cleanup_my_messages": "messaging",
     "react_to_message": "reactions", "react_to_user_latest": "reactions",
     "react_to_recent": "reactions",
     "search_gifs": "media", "send_gif": "media", "trending_gifs": "media",
@@ -450,6 +500,10 @@ _CATEGORIES: dict[str, str] = {
     "list_slash_commands": "slash", "use_slash_command": "slash",
     "find_bump_commands": "bump", "bump_with_bot": "bump",
     "bump_all": "bump", "get_bump_status": "bump",
+    "schedule_message": "scheduling", "list_scheduled": "scheduling",
+    "stop_scheduled": "scheduling",
+    "set_preference": "prefs", "get_preferences": "prefs",
+    "delete_preference": "prefs",
 }
 
 # Always included — actions almost always need to resolve fuzzy names

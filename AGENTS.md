@@ -157,6 +157,17 @@
   `extra={"reasoning_effort": "low"}` via `pool.chat(extra=...)` and need
   max_tokens ≥ ~400 or replies come back EMPTY.
 - `say_in_vc` tool speaks arbitrary text in the active session.
+- **Scheduler** (`core/scheduler.py` + `tools/scheduler.py`): owner-only
+  timed actions, persisted in `data/scheduled_tasks.json`, revived on
+  restart, `stop_scheduled` cancels+cleans. Tools: schedule_message /
+  list_scheduled / stop_scheduled.
+- **Preferences** (`tools/prefs.py`, `data/prefs.json`): owner key-value
+  prefs (`welcome_channel` steers member-join greetings in events.py).
+- **Self-cleanup** (`core/self_cleanup.py`): before each send, deletes our
+  own unanswered (>10min, non-latest) messages; `cleanup_my_messages` tool
+  sweeps >6h / >15-per-channel.
+- **did_send flag**: `ctx.did_send` set by send_message/send_dm suppresses
+  the agent's own reply — prevents double messages.
 - **Render deploy** (`render.yaml`): web service on free tier, health
   endpoint auto-binds `$PORT` in run.py (returns 200 "ok" for keep-alive
   pings). `VOICE_SMART_TURN=false` by default there — 512MB RAM can't

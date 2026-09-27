@@ -58,10 +58,17 @@ def _register(bot: discord.Client, ctx: ToolContext, agent: Agent) -> None:
     @bot.event
     async def on_member_join(member: discord.Member):
         logger.info(f"Member joined {member.guild.name}: {member.display_name}")
+        from tools.prefs import get_pref
+        welcome_ch = get_pref("welcome_channel")
+        pref_hint = (
+            f" IMPORTANT: the owner's preferred welcome channel is "
+            f"'{welcome_ch}' — greet them THERE, not the default channel."
+            if welcome_ch else ""
+        )
         desc = (
             f"A new member just joined the server: {member.display_name} "
             f"(username {member}, id {member.id}). "
-            f"Total members now: {member.guild.member_count}."
+            f"Total members now: {member.guild.member_count}.{pref_hint}"
         )
         try:
             await agent.run(desc, mode=EVENT_MODE)

@@ -117,7 +117,19 @@ async def send_message(
             sent = await ch.send(final)
     except discord.HTTPException as e:
         return {"error": f"Send failed: {e}"}
+    ctx.did_send = True   # suppress the agent's own reply — avoid double send
     return {"ok": True, "channel": ch.name, "message_id": sent.id, "sent": final}
+
+
+async def cleanup_my_messages(ctx: ToolContext, channel_query: str) -> dict:
+    """Sweep the bot's own stale messages in a channel (older than 6h or
+    beyond 15). Owner-facing hygiene — 'clean up your messages in #x'."""
+    ch = await _resolve_text_channel(ctx, channel_query)
+    if ch is None:
+        return {"error": f"No text channel matching '{channel_query}'."}
+    from core import self_cleanup
+    deleted = await self_cleanup.sweep_channel(ctx.bot, ch)
+    return {"ok": True, "channel": ch.name, "deleted": deleted}
 
 
 async def send_dm(ctx: ToolContext, user_query: str, content: str) -> dict:
@@ -130,6 +142,7 @@ async def send_dm(ctx: ToolContext, user_query: str, content: str) -> dict:
         await user.send(content)
     except discord.HTTPException as e:
         return {"error": f"DM failed: {e}"}
+    ctx.did_send = True
     return {"ok": True, "user": res["name"], "sent": content}
 
 

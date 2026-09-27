@@ -18,6 +18,9 @@ class ToolContext:
     bot: discord.Client
     guild: Optional[discord.Guild] = None
     current_channel_id: Optional[int] = None
+    # Per-turn state — set by the trigger path each message:
+    author_id: Optional[int] = None   # who asked (owner-gating in tools)
+    did_send: bool = False            # a messaging tool already delivered
 
     def require_guild(self) -> discord.Guild:
         if self.guild is None:

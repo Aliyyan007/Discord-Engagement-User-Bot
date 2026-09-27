@@ -78,8 +78,10 @@ try:
             self._closed = True
 
     _NATIVE_VOICE = True
-except Exception:  # noqa: BLE001
+    _NATIVE_ERR = None
+except Exception as _e:  # noqa: BLE001
     _NATIVE_VOICE = False
+    _NATIVE_ERR = _e
     AsyncQueueSink = PCMDecodeSink = _ResilientSink = None
 
     class AudioFrameSource(discord.AudioSource):
@@ -303,7 +305,9 @@ class VoiceSession:
                 self._attach_listener()
                 asyncio.create_task(self._dave_diag())
             else:
-                logger.warning("native_voice unavailable — session runs DEAF (speak-only).")
+                logger.warning(
+                    f"native_voice unavailable ({_NATIVE_ERR!r}) — session "
+                    "runs DEAF (speak-only).")
         except Exception as e:  # noqa: BLE001
             logger.error(f"VC listen failed — speak-only mode: {e}")
 
