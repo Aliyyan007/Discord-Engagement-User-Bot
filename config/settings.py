@@ -57,8 +57,22 @@ class Settings(BaseSettings):
     # --- Discord ---
     discord_token: str = Field(..., alias="DISCORD_TOKEN")
     server_invite: str = Field("", alias="SERVER_INVITE")
-    owner_user_id: int = Field(0, alias="OWNER_USER_ID")
+    # Comma-separated list of owner IDs — "123" or "123,456" both work.
+    owner_user_id: str = Field("0", alias="OWNER_USER_ID")
     command_channel_id: int = Field(0, alias="COMMAND_CHANNEL_ID")
+
+    @property
+    def owner_ids(self) -> frozenset[int]:
+        """All owner IDs — comma/semicolon separated in .env."""
+        out = set()
+        for p in str(self.owner_user_id or "").replace(";", ",").split(","):
+            p = p.strip()
+            if p.isdigit():
+                out.add(int(p))
+        return frozenset(out)
+
+    def is_owner(self, uid: int) -> bool:
+        return uid in self.owner_ids
 
     # --- Groq ---
     groq_model_text: str = Field("openai/gpt-oss-120b", alias="GROQ_MODEL_TEXT")
@@ -102,7 +116,7 @@ class Settings(BaseSettings):
     # --- Derived (not from env directly) ---
     groq_keys: List[str] = Field(default_factory=list)
 
-    @field_validator("owner_user_id", "command_channel_id", mode="before")
+    @field_validator("command_channel_id", mode="before")
     @classmethod
     def _empty_to_zero(cls, v):
         if v in (None, "", "None"):

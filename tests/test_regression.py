@@ -195,8 +195,8 @@ class TestSettings(unittest.TestCase):
 
     def test_owner_user_id_positive(self):
         from config.settings import settings
-        self.assertGreater(settings.owner_user_id, 0,
-            f"owner_user_id should be > 0, got {settings.owner_user_id}")
+        self.assertGreater(len(settings.owner_ids), 0,
+            f"owner_ids should be non-empty, got {settings.owner_ids}")
 
     def test_groq_keys_nonempty(self):
         from config.settings import settings

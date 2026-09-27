@@ -36,7 +36,7 @@ def get_pref(key: str, default=None):
 async def set_preference(ctx: ToolContext, key: str, value: str) -> dict:
     """Store an owner preference, e.g. key=welcome_channel value=general.
     Owner-only."""
-    if settings.owner_user_id and ctx.author_id != settings.owner_user_id:
+    if settings.owner_ids and not settings.is_owner(ctx.author_id):
         return {"error": "Only the owner can set preferences."}
     p = _load()
     p[key.strip().lower().replace(" ", "_")] = value.strip()
@@ -47,14 +47,14 @@ async def set_preference(ctx: ToolContext, key: str, value: str) -> dict:
 
 async def get_preferences(ctx: ToolContext) -> dict:
     """List all stored owner preferences."""
-    if settings.owner_user_id and ctx.author_id != settings.owner_user_id:
+    if settings.owner_ids and not settings.is_owner(ctx.author_id):
         return {"error": "Only the owner can view preferences."}
     return {"preferences": _load()}
 
 
 async def delete_preference(ctx: ToolContext, key: str) -> dict:
     """Remove a stored preference. Owner-only."""
-    if settings.owner_user_id and ctx.author_id != settings.owner_user_id:
+    if settings.owner_ids and not settings.is_owner(ctx.author_id):
         return {"error": "Only the owner can delete preferences."}
     p = _load()
     if key not in p:

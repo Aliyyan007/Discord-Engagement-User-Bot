@@ -37,7 +37,7 @@ async def _maybe_autojoin(bot: discord.Client, ctx: ToolContext,
         humans = [m for m in channel.members if not m.bot]
         if len(humans) != 1:
             return  # only auto-join a person alone — feels intentional
-        chance = 0.6 if member.id == settings.owner_user_id else 0.15
+        chance = 0.6 if settings.is_owner(member.id) else 0.15
         if random.random() >= chance:
             return
         await asyncio.sleep(random.uniform(4, 14))

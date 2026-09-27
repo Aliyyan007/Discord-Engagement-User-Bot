@@ -16,7 +16,7 @@ from utils.fuzzy import fuzzy_search
 
 def _owner_only(ctx: ToolContext) -> dict | None:
     """Timed actions are owner-privileged — refuse anyone else."""
-    if settings.owner_user_id and ctx.author_id != settings.owner_user_id:
+    if settings.owner_ids and not settings.is_owner(ctx.author_id):
         return {"error": "Only the owner can schedule actions."}
     return None
 

@@ -40,6 +40,27 @@ from .pcm import FRAME_BYTES, apply_gain, chunk_frames, pcm_duration
 from .stt import _GARBLE_RX, transcribe
 from .vad import UtteranceAssembler
 
+def _install_native_voice() -> bool:
+    """Runtime self-heal: Render/PIP builds sometimes skip the package
+    (blueprint changes to buildCommand don't retro-apply). Install it
+    once at import so voice receive works on any host."""
+    try:
+        import subprocess
+        import sys
+        r = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--no-deps", "--quiet",
+             "discord-native-voice"],
+            capture_output=True, timeout=180)
+        return r.returncode == 0
+    except Exception:  # noqa: BLE001
+        return False
+
+
+try:
+    import discord.ext.native_voice  # noqa: F401 — probe first
+except ModuleNotFoundError:
+    _install_native_voice()          # self-heal, then let the import retry
+
 try:
     from discord.ext.native_voice import (
         AsyncQueueSink,

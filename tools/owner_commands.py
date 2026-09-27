@@ -47,7 +47,8 @@ async def store_instruction(
             """INSERT INTO owner_instructions
                  (owner_id, guild_id, instruction, status, created_at, updated_at)
                VALUES (?, ?, ?, ?, ?, ?)""",
-            [str(settings.owner_user_id), guild_id, instruction, status, now, now],
+            [str(ctx.author_id or next(iter(settings.owner_ids), 0)),
+             guild_id, instruction, status, now, now],
         )
         if confirm:
             return {"stored": True, "activated": True, "message": "Instruction activated."}

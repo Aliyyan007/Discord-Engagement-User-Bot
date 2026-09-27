@@ -134,8 +134,8 @@ def test_owner_gate():
     with tempfile.TemporaryDirectory() as td:
         with mock.patch.object(sched_mod, "STORE", Path(td) / "t.json"), \
              mock.patch.object(prefs, "STORE", Path(td) / "p.json"), \
-             mock.patch.object(prefs.settings, "owner_user_id", 999), \
-             mock.patch.object(sched_tools.settings, "owner_user_id", 999), \
+             mock.patch.object(prefs.settings, "owner_user_id", "999"), \
+             mock.patch.object(sched_tools.settings, "owner_user_id", "999"), \
              mock.patch.object(sched_tools, "fuzzy_search",
                                lambda q, c, key, limit: []):
             chans = [FakeChannel()]

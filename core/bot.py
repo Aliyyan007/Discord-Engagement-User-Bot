@@ -236,7 +236,7 @@ class EngagerBot(discord.Client):
 
     async def _process_message(self, message: discord.Message) -> None:
         """Process a single message through the agent (called under _msg_lock)."""
-        is_owner = message.author.id == settings.owner_user_id
+        is_owner = settings.is_owner(message.author.id)
         is_dm = isinstance(message.channel, discord.DMChannel)
         is_command_channel = (
             settings.command_channel_id
