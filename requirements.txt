@@ -21,7 +21,10 @@ rapidfuzz>=3.0.0          # fast fuzzy search for channels / members
 httpx>=0.27.0             # async HTTP for Klipy gif search & image fetch
 
 # Voice (real-time VC listen + speak pipeline)
-discord-native-voice>=0.1.1    # native RTP voice send/receive + DAVE E2EE for py-self
+# discord-native-voice is NOT here — it pins discord.py-self>=2.2.0 but
+# master's version is 2.2.0a0 (pre-release < release = unresolvable).
+# Install separately:  pip install --no-deps discord-native-voice
+# (render.yaml build does this automatically)
 opuslib-next-bundled>=0.1.1    # opus codec with bundled DLL (Windows-friendly)
 davey>=0.1.0                   # Discord DAVE E2EE voice protocol
 PyNaCl>=1.5.0                  # RTP encryption for the stock voice client
